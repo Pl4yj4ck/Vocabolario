@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <link rel="icon" type="image/png" href="icon.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vocaboli - AutoSync</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+
+    <script src="database.js"></script>
+
+    <style>
+      :root {
+        --md-sys-color-primary: #6750a4;
+        --md-sys-color-surface: #fef7ff;
+        --md-sys-color-secondary-container: rgba(103, 80, 164, 0.15);
+        --md-sys-color-surface-container: rgba(0, 0, 0, 0.05);
+        --md-sys-color-outline: #79747e;
+        --md-sys-color-error: #b3261e;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: var(--md-sys-color-surface);
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+        color: #1d1b20;
+        overflow-x: hidden;
+      }
+
+      .phone-container {
+        width: 100%;
+        max-width: 480px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      .page {
+        display: none;
+        flex-direction: column;
+        padding: 20px;
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      .page.active {
+        display: flex;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        margin-bottom: 10px;
+      }
+
+      .m3-card {
+        background: var(--md-sys-color-surface-container);
+        border-radius: 28px;
+        padding: 24px;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+
+      .btn-large {
+        background: var(--md-sys-color-secondary-container);
+        border: none;
+        padding: 18px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+        color: var(--md-sys-color-primary);
+        transition: transform 0.1s;
+      }
+
+      .btn-large:active { transform: scale(0.98); }
+
+      .btn-fab {
+        background: var(--md-sys-color-primary);
+        color: white;
+        border: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Stili Impostazioni */
+      .settings-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: var(--md-sys-color-surface-container);
+        border-radius: 16px;
+        margin-bottom: 12px;
+      }
+
+      .settings-item.grid-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .color-preview {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid white;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+      }
+
+      input[type="color"] {
+        position: absolute;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        cursor: pointer; border: none;
+      }
+
+      /* ---- File Selector Card Grid ---- */
+      #file-select-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 12px;
+        width: 100%;
+      }
+
+      .file-card {
+        position: relative;
+        background: white;
+        border: 1.5px solid var(--md-sys-color-outline);
+        border-radius: 14px;
+        padding: 10px 40px 10px 12px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        transition: border-color 0.2s, background 0.2s, transform 0.15s;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        box-sizing: border-box;
+      }
+
+      .file-card:hover {
+        border-color: var(--md-sys-color-primary);
+        transform: translateY(-1px);
+      }
+
+      .file-card:active {
+        transform: scale(0.98);
+      }
+
+      .file-card.selected {
+        background: var(--md-sys-color-secondary-container);
+        border-color: var(--md-sys-color-primary);
+        border-width: 2px;
+      }
+
+      .file-card .fc-icon {
+        font-size: 20px;
+        color: var(--md-sys-color-outline);
+        transition: color 0.2s;
+        flex-shrink: 0;
+      }
+
+      .file-card.selected .fc-icon {
+        color: var(--md-sys-color-primary);
+      }
+
+      .file-card .fc-text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+      }
+
+      .file-card .fc-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1d1b20;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .file-card .fc-count {
+        font-size: 11px;
+        color: var(--md-sys-color-outline);
+      }
+
+      .file-card .fc-check {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%) scale(0);
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--md-sys-color-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .file-card.selected .fc-check {
+        transform: translateY(-50%) scale(1);
+      }
+
+      @media (min-width: 400px) {
+        #file-select-container {
+          grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        }
+      }
+
+      @media (min-width: 600px) {
+        #file-select-container {
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        }
+      }
+
+      /* Game styles */
+      .matching-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .chip { background: white; border: 1px solid var(--md-sys-color-outline); border-radius: 16px; padding: 12px 6px; text-align: center; font-size: 13px; display: flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
+      .chip.selected { background: var(--md-sys-color-secondary-container); border-color: var(--md-sys-color-primary); }
+      .chip.correct { opacity: 0; pointer-events: none; }
+      .chip.wrong { background: #f9dedc; border-color: var(--md-sys-color-error); animation: shake 0.3s; }
+      .typing-input { width: 100%; border: none; border-bottom: 2px solid var(--md-sys-color-primary); background: transparent; font-size: 24px; padding: 12px 0; outline: none; text-align: center; }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="phone-container">
+
+      <!-- HOME -->
+      <section id="page-home" class="page active">
+        <div class="top-bar">
+          <h1 style="font-size: 28px; margin: 0">Vocaboli</h1>
+          <button class="btn-fab" onclick="navigateTo('page-settings')" style="background: transparent; color: var(--md-sys-color-primary)">
+            <span class="material-icons-outlined">settings</span>
+          </button>
+        </div>
+
+        <p style="color: var(--md-sys-color-outline); font-size: 14px; margin-bottom: 12px;">Configura i file nelle impostazioni.</p>
+
+        <div id="game-buttons" style="opacity: 0.5; pointer-events: none">
+          <button class="btn-large" onclick="initMatching()"><span class="material-icons-outlined">extension</span> Matching</button>
+          <button class="btn-large" onclick="initTyping()"><span class="material-icons-outlined">edit</span> Scrittura</button>
+          <button class="btn-large" onclick="initScramble()"><span class="material-icons-outlined">reorder</span> Anagramma</button>
+          <button class="btn-large" onclick="initQuiz()"><span class="material-icons-outlined">quiz</span> Scelta Multipla</button>
+          <button class="btn-large" onclick="initFlashcards()"><span class="material-icons-outlined">style</span> Flashcards</button>
+        </div>
+        <p id="status-text" style="text-align: center; font-size: 12px; color: var(--md-sys-color-outline); margin-top: 15px;"></p>
+      </section>
+
+      <!-- IMPOSTAZIONI -->
+      <section id="page-settings" class="page">
+        <div class="top-bar">
+          <button class="btn-fab" onclick="navigateTo('page-home')">
+            <span class="material-icons-outlined">arrow_back</span>
+          </button>
+          <h2 style="margin: 0; font-size: 20px;">Impostazioni</h2>
+          <div style="width:44px"></div>
+        </div>
+
+        <h3 style="font-size: 14px; text-transform: uppercase; color: var(--md-sys-color-outline); margin-top: 24px;">Aspetto</h3>
+        <div class="settings-item">
+          <span>Colore Primario</span>
+          <div class="color-preview"><input type="color" id="color-primary" onchange="updateColors()"></div>
+        </div>
+        <div class="settings-item">
+          <span>Sfondo</span>
+          <div class="color-preview"><input type="color" id="color-surface" onchange="updateColors()"></div>
+        </div>
+
+        <h3 style="font-size: 14px; text-transform: uppercase; color: var(--md-sys-color-outline); margin-top: 24px;">Dati extra</h3>
+        <div class="settings-item grid-item">
+          <span style="font-weight: 500;">File attivi</span>
+          <div id="file-select-container"></div>
+        </div>
+
+        <div class="m3-card" style="text-align: left; padding: 16px;">
+          <input type="file" id="csv-upload" accept=".csv" style="display: none;" onchange="handleFileUpload(this)">
+          <button class="btn-large" onclick="document.getElementById('csv-upload').click()" style="margin:0">
+            <span class="material-icons-outlined">upload</span> Carica file CSV
+          </button>
+        </div>
+
+        <button class="btn-large" onclick="resetAll()" style="background: #f9dedc; color: #b3261e; margin-top: 20px;">
+          <span class="material-icons-outlined">delete_forever</span> Resetta tutto
+        </button>
+      </section>
+
+      <!-- GIOCO -->
+      <section id="game-view" class="page">
+        <div class="top-bar">
+          <button class="btn-fab" onclick="navigateTo('page-home')">
+            <span class="material-icons-outlined">arrow_back</span>
+          </button>
+          <h2 id="game-title" style="margin: 0; font-size: 18px">---</h2>
+          <div style="width: 44px"></div>
+        </div>
+        <div id="game-content" style="margin-top: 20px"></div>
+        <div id="game-feedback" style="text-align: center; margin-top: 20px; font-weight: 500; min-height: 24px;"></div>
+      </section>
+
+    </div>
+
+    <script>
+      let db = {};
+      let selectedCats = [];
+      let activeVocab = [];
+      let currentItem = null;
+      let selectedChip = null;
+
+      window.onload = () => {
+        loadSettings();
+
+        if (typeof auto_db !== "undefined") {
+          db = JSON.parse(JSON.stringify(auto_db));
+        }
+
+        const saved = localStorage.getItem('vocab_db_manual');
+        if (saved) {
+          const manualDb = JSON.parse(saved);
+          db = { ...db, ...manualDb };
+        }
+
+        selectedCats = JSON.parse(localStorage.getItem('selectedCats') || '[]');
+        populateSelect();
+        updateActiveVocab();
+      };
+
+      function updateActiveVocab() {
+        activeVocab = [];
+        selectedCats.forEach((cat) => { activeVocab = [...activeVocab, ...db[cat]]; });
+        const ready = activeVocab.length > 0;
+        document.getElementById("game-buttons").style.opacity = ready ? "1" : "0.5";
+        document.getElementById("game-buttons").style.pointerEvents = ready ? "auto" : "none";
+        document.getElementById("status-text").innerText = ready
+          ? `${activeVocab.length} parole caricate. Scegli un gioco!`
+          : "Seleziona almeno un file nelle impostazioni.";
+      }
+
+      function navigateTo(id) {
+        document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+
+      // --- IMPOSTAZIONI ---
+      function updateColors() {
+        const p = document.getElementById('color-primary').value;
+        const s = document.getElementById('color-surface').value;
+        document.documentElement.style.setProperty('--md-sys-color-primary', p);
+        document.documentElement.style.setProperty('--md-sys-color-surface', s);
+        localStorage.setItem('theme_primary', p);
+        localStorage.setItem('theme_surface', s);
+      }
+
+      function loadSettings() {
+        const p = localStorage.getItem('theme_primary') || '#6750A4';
+        const s = localStorage.getItem('theme_surface') || '#FEF7FF';
+        document.getElementById('color-primary').value = p;
+        document.getElementById('color-surface').value = s;
+        document.documentElement.style.setProperty('--md-sys-color-primary', p);
+        document.documentElement.style.setProperty('--md-sys-color-surface', s);
+      }
+
+      function handleFileUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          const catName = file.name.replace('.csv', '').toUpperCase();
+          const lines = text.split('\n').filter(l => l.includes(',') || l.includes(';'));
+          const parsed = lines.map(l => {
+            const p = l.split(/[;,]/);
+            return { ita: p[0].trim(), eng: p[1].trim() };
+          });
+
+          let manualDb = JSON.parse(localStorage.getItem('vocab_db_manual') || '{}');
+          manualDb[catName] = parsed;
+          localStorage.setItem('vocab_db_manual', JSON.stringify(manualDb));
+
+          db[catName] = parsed;
+          populateSelect();
+          alert("File caricato con successo!");
+        };
+        reader.readAsText(file);
+      }
+
+      function resetAll() {
+        if (confirm("Vuoi resettare i colori e i file caricati manualmente?")) {
+          localStorage.clear();
+          location.reload();
+        }
+      }
+
+      function populateSelect() {
+        const container = document.getElementById('file-select-container');
+        container.innerHTML = '';
+
+        const keys = Object.keys(db);
+        if (keys.length === 0) {
+          container.innerHTML = `<p style="font-size:13px; color:var(--md-sys-color-outline); grid-column:1/-1; margin:0;">
+            Nessun file disponibile. Carica un CSV qui sotto.
+          </p>`;
+          return;
+        }
+
+        keys.forEach(cat => {
+          const isSelected = selectedCats.includes(cat);
+          const count = db[cat]?.length || 0;
+
+          const card = document.createElement('div');
+          card.className = `file-card ${isSelected ? 'selected' : ''}`;
+          card.innerHTML = `
+            <span class="material-icons-outlined fc-icon">description</span>
+            <div class="fc-text">
+              <span class="fc-name">${cat}</span>
+              <span class="fc-count">${count} parole</span>
+            </div>
+            <span class="material-icons-outlined fc-check" style="font-size:14px">check</span>
+          `;
+
+          card.onclick = () => {
+            if (selectedCats.includes(cat)) {
+              selectedCats = selectedCats.filter(c => c !== cat);
+            } else {
+              selectedCats.push(cat);
+            }
+            populateSelect();
+            updateSelectedCats();
+          };
+
+          container.appendChild(card);
+        });
+      }
+
+      function updateSelectedCats() {
+        localStorage.setItem('selectedCats', JSON.stringify(selectedCats));
+        updateActiveVocab();
+      }
+
+      // --- GIOCHI ---
+      function setupGame(title) {
+        navigateTo('game-view');
+        document.getElementById('game-title').innerText = title;
+        document.getElementById('game-feedback').innerText = '';
+        return document.getElementById('game-content');
+      }
+
+      function initMatching() {
+        const container = setupGame("Matching");
+        const grid = document.createElement('div'); grid.className = 'matching-grid';
+        container.innerHTML = ''; container.appendChild(grid);
+        const subset = [...activeVocab].sort(() => 0.5 - Math.random()).slice(0, 6);
+        let pool = [];
+        subset.forEach(w => { pool.push({ t: w.ita, m: w.eng }, { t: w.eng, m: w.ita }); });
+        pool.sort(() => 0.5 - Math.random());
+        pool.forEach(item => {
+          const div = document.createElement('div'); div.className = 'chip'; div.innerText = item.t;
+          div.onclick = () => {
+            if (div.classList.contains('correct') || div === selectedChip?.el) return;
+            div.classList.add('selected');
+            if (!selectedChip) {
+              selectedChip = { el: div, m: item.m };
+            } else {
+              if (selectedChip.m === item.t) {
+                div.classList.add('correct'); selectedChip.el.classList.add('correct');
+                selectedChip = null;
+                if (document.querySelectorAll('.chip:not(.correct)').length === 0) setTimeout(initMatching, 1000);
+              } else {
+                div.classList.add('wrong'); selectedChip.el.classList.add('wrong');
+                setTimeout(() => {
+                  div.classList.remove('wrong', 'selected');
+                  selectedChip.el.classList.remove('wrong', 'selected');
+                  selectedChip = null;
+                }, 400);
+              }
+            }
+          };
+          grid.appendChild(div);
+        });
+      }
+
+      function initTyping() {
+        const container = setupGame("Scrittura");
+        currentItem = activeVocab[Math.floor(Math.random() * activeVocab.length)];
+        container.innerHTML = `<div class="m3-card"><h2>${currentItem.ita}</h2></div><input type="text" id="t-inp" class="typing-input" placeholder="Traduci..." autocomplete="off">`;
+        const inp = document.getElementById('t-inp'); inp.focus();
+        inp.onkeypress = (e) => {
+          if (e.key === 'Enter') {
+            const win = inp.value.trim().toLowerCase() === currentItem.eng.toLowerCase();
+            document.getElementById('game-feedback').innerText = win ? "Corretto!" : `Sbagliato: ${currentItem.eng}`;
+            setTimeout(initTyping, win ? 800 : 2000);
+          }
+        };
+      }
+
+      // initScramble, initQuiz, initFlashcards seguono la stessa logica
+    </script>
+  </body>
+</html>
